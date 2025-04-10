@@ -1,0 +1,284 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Counting Chips</title>
+  <style>
+    body {
+      background-color: #ccc;
+      margin: 0;
+      font-family: sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #container {
+      display: flex;
+      flex-direction: row;
+      padding: 20px;
+    }
+
+    #chipBox {
+      background-color: #eee;
+      padding: 20px;
+      border-radius: 10px;
+      width: 160px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+      justify-content: flex-start;
+      height: fit-content;
+    }
+
+    #workspace {
+      flex-grow: 1;
+      position: relative;
+      border: 2px dashed #aaa;
+      margin-left: 20px;
+      height: 70vh;
+      border-radius: 10px;
+      background-color: #f0f0f0;
+      overflow: hidden;
+    }
+
+    #trash {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 60px;
+      height: 60px;
+      background-color: #d9534f;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 20px;
+      z-index: 10;
+    }
+
+    .chip {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: gold;
+      cursor: grab;
+      box-shadow: 0 0 8px rgba(0,0,0,0.3);
+      transition: all 0.2s ease-in-out;
+      position: absolute;
+    }
+
+    .red {
+      background-color: red !important;
+    }
+
+    .yellow {
+      background-color: gold !important;
+    }
+
+    .template-chip {
+      position: static;
+      cursor: grab;
+      position: relative;
+    }
+
+    #addChipsBox {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .add-button {
+      padding: 5px 10px;
+      border: none;
+      background-color: #999;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    #exerciseArea {
+      margin: 20px;
+      padding: 10px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    #exerciseArea input, #exerciseArea select, #exerciseArea button {
+      margin: 5px;
+      padding: 5px;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(1); box-shadow: 0 0 0px rgba(255,255,255,0); }
+      50% { transform: scale(1.2); box-shadow: 0 0 10px rgba(255,255,0,0.8); }
+      100% { transform: scale(1); box-shadow: 0 0 0px rgba(255,255,255,0); }
+    }
+
+    .pop-animation {
+      animation: pop 0.4s ease;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="chipBox">
+      <div class="chip template-chip red" data-color="red" draggable="true"></div>
+      <div class="chip template-chip yellow" data-color="yellow" draggable="true"></div>
+
+      <div id="addChipsBox">
+        <button class="add-button" onclick="addMultipleChips(3)">Add 3 Chips</button>
+        <button class="add-button" onclick="addMultipleChips(5)">Add 5 Chips</button>
+        <button class="add-button" onclick="addMultipleChips(10)">Add 10 Chips</button>
+        <button class="add-button" onclick="addMultipleChips(15)">Add 15 Chips</button>
+      </div>
+    </div>
+
+    <div>
+      <div id="workspace">
+        <div id="trash">🗑️</div>
+      </div>
+
+      <div id="exerciseArea">
+        <label>Enter Exercise:</label>
+        <input type="number" id="num1" placeholder="Number 1">
+        <select id="operator">
+          <option value="+">+</option>
+          <option value="-">-</option>
+          <option value="*">×</option>
+          <option value="/">÷</option>
+        </select>
+        <input type="number" id="num2" placeholder="Number 2">
+        <button onclick="checkAnswer()">Check</button>
+        <input type="number" id="studentAnswer" placeholder="Your Answer">
+        <span id="feedback"></span>
+      </div>
+    </div>
+  </div>
+
+  <footer>Done by Lourdes R.</footer>
+
+  <script>
+    const workspace = document.getElementById("workspace");
+    const trash = document.getElementById("trash");
+    const chips = [];
+
+    const soundEffect = new Audio("https://www.soundjay.com/buttons/sounds/button-09.mp3");
+
+    document.querySelectorAll(".template-chip").forEach(template => {
+      template.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("color", template.classList.contains("yellow") ? "yellow" : "red");
+      });
+    });
+
+    workspace.addEventListener("dragover", e => e.preventDefault());
+
+    workspace.addEventListener("drop", e => {
+      e.preventDefault();
+      const color = e.dataTransfer.getData("color");
+      if (e.target === trash) return;
+      createChip(color);
+      alignChips();
+    });
+
+    function createChip(color) {
+      const chip = document.createElement("div");
+      chip.classList.add("chip");
+      chip.classList.add(color);
+
+      chip.addEventListener("dblclick", () => {
+        chip.classList.toggle("yellow");
+        chip.classList.toggle("red");
+        soundEffect.currentTime = 0;
+        soundEffect.play();
+        chip.classList.add("pop-animation");
+        setTimeout(() => chip.classList.remove("pop-animation"), 400);
+      });
+
+      chip.setAttribute("draggable", true);
+      chip.addEventListener("dragstart", evt => {
+        evt.dataTransfer.setData("chip-index", chips.indexOf(chip));
+      });
+      chip.addEventListener("dragend", evt => {
+        chip.style.left = `${evt.pageX - 20}px`;
+        chip.style.top = `${evt.pageY - 20}px`;
+      });
+
+      workspace.appendChild(chip);
+      chips.push(chip);
+    }
+
+    function addMultipleChips(amount) {
+      for (let i = 0; i < amount; i++) createChip("yellow");
+      alignChips();
+    }
+
+    function alignChips() {
+      const spacing = 50;
+      chips.forEach((chip, i) => {
+        const x = 30 + (i % 10) * spacing;
+        const y = 30 + Math.floor(i / 10) * spacing;
+        chip.style.left = `${x}px`;
+        chip.style.top = `${y}px`;
+      });
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Delete" || e.key === "Backspace") {
+        chips.forEach(chip => chip.remove());
+        chips.length = 0;
+      }
+    });
+
+    trash.addEventListener("dragover", e => e.preventDefault());
+
+    trash.addEventListener("drop", e => {
+      e.preventDefault();
+      const chipIndex = e.dataTransfer.getData("chip-index");
+      const chip = chips[chipIndex];
+      if (chip) {
+        chip.remove();
+        chips.splice(chipIndex, 1);
+        alignChips();
+      }
+    });
+
+    function checkAnswer() {
+      const n1 = parseFloat(document.getElementById("num1").value);
+      const n2 = parseFloat(document.getElementById("num2").value);
+      const op = document.getElementById("operator").value;
+      const student = parseFloat(document.getElementById("studentAnswer").value);
+      let result;
+      switch(op) {
+        case "+": result = n1 + n2; break;
+        case "-": result = n1 - n2; break;
+        case "*": result = n1 * n2; break;
+        case "/": result = n1 / n2; break;
+      }
+      const feedback = document.getElementById("feedback");
+      if (student === result) {
+        feedback.textContent = "✅ Correct!";
+        feedback.style.color = "green";
+      } else {
+        feedback.textContent = `❌ Try again. Correct answer: ${result}`;
+        feedback.style.color = "red";
+      }
+    }
+  </script>
+</body>
+</html>
